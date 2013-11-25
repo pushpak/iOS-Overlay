@@ -21,7 +21,8 @@ $(document).on("click", "#cross", function(e) {
 	iosOverlay({
 		text: "Error!",
 		duration: 2e3,
-		icon: "img/cross.png"
+		icon: "img/cross.png",
+		readOnly: false
 	});
 	return false;
 });
@@ -44,13 +45,12 @@ $(document).on("click", "#loading", function(e) {
 		top: 'auto', // Top position relative to parent in px
 		left: 'auto' // Left position relative to parent in px
 	};
-	var target = document.createElement("div");
-	document.body.appendChild(target);
-	var spinner = new Spinner(opts).spin(target);
+
 	iosOverlay({
 		text: "Loading",
 		duration: 2e3,
-		spinner: spinner
+		spinner: new Spinner(opts).spin(),
+		readOnly: false
 	});
 	return false;
 });
@@ -73,12 +73,10 @@ $(document).on("click", "#loadToSuccess", function(e) {
 		top: 'auto', // Top position relative to parent in px
 		left: 'auto' // Left position relative to parent in px
 	};
-	var target = document.createElement("div");
-	document.body.appendChild(target);
-	var spinner = new Spinner(opts).spin(target);
+
 	var overlay = iosOverlay({
 		text: "Loading",
-		spinner: spinner
+		spinner: new Spinner(opts).spin()
 	});
 
 	window.setTimeout(function() {

@@ -5,7 +5,7 @@ var iosOverlay = function(params) {
 
 	"use strict";
 
-	var overlayDOM;
+	var overlayBlock, overlayDOM;
 	var noop = function() {};
 	var defaults = {
 		onbeforeshow: noop,
@@ -16,6 +16,7 @@ var iosOverlay = function(params) {
 		icon: null,
 		spinner: null,
 		duration: null,
+		readOnly: true,
 		id: null,
 		parentEl: null
 	};
@@ -28,104 +29,71 @@ var iosOverlay = function(params) {
 		return obj3;
 	};
 
-	// helper - does it support CSS3 transitions/animation
-	var doesTransitions = (function() {
-		var b = document.body || document.documentElement;
-		var s = b.style;
-		var p = 'transition';
-		if (typeof s[p] === 'string') { return true; }
-
-		// Tests for vendor specific prop
-		var v = ['Moz', 'Webkit', 'Khtml', 'O', 'ms'];
-		p = p.charAt(0).toUpperCase() + p.substr(1);
-		for(var i=0; i<v.length; i++) {
-			if (typeof s[v[i] + p] === 'string') { return true; }
-		}
-		return false;
-	}());
 
 	// setup overlay settings
 	var settings = merge(defaults,params);
 
-	// 
-	var handleAnim = function(anim) {
-		if (anim.animationName === "ios-overlay-show") {
-			settings.onshow();
-		}
-		if (anim.animationName === "ios-overlay-hide") {
-			destroy();
-			settings.onhide();
-		}
-	};
-
 	// IIFE
 	var create = (function() {
+
+		if(settings.readOnly) {
+			overlayBlock = document.createElement("div");
+			overlayBlock.className = "ui-ios-overlay-block";
+			overlayBlock.style.cssText = "display:block;";
+			document.body.appendChild(overlayBlock);
+		}
 
 		// initial DOM creation and event binding
 		overlayDOM = document.createElement("div");
 		overlayDOM.className = "ui-ios-overlay";
-		overlayDOM.innerHTML += '<span class="title">' + settings.text + '</span';
+		overlayDOM.innerHTML += '<span class="title">' + settings.text + '</span>';
+
 		if (params.icon) {
 			overlayDOM.innerHTML += '<img src="' + params.icon + '">';
 		} else if (params.spinner) {
 			overlayDOM.appendChild(params.spinner.el);
 		}
-		if (doesTransitions) {
-			overlayDOM.addEventListener("webkitAnimationEnd", handleAnim, false);
-			overlayDOM.addEventListener("msAnimationEnd", handleAnim, false);
-			overlayDOM.addEventListener("oAnimationEnd", handleAnim, false);
-			overlayDOM.addEventListener("animationend", handleAnim, false);
-		}
+
+        settings.onbeforeshow();
+
 		if (params.parentEl) {
 			document.getElementById(params.parentEl).appendChild(overlayDOM);
 		} else {
 			document.body.appendChild(overlayDOM);
 		}
 		
-		settings.onbeforeshow();
-		// begin fade in
-		if (doesTransitions) {
-			overlayDOM.className += " ios-overlay-show";
-		} else if (typeof $ === "function") {
-			$(overlayDOM).fadeIn({
-				duration: 200
-			}, function() {
-				settings.onshow();
-			});
-		}
+		settings.onshow();
 
 		if (settings.duration) {
 			window.setTimeout(function() {
-				hide();
-			},settings.duration);
+				destroy();
+			}, settings.duration);
 		}
 
 	}());
 
-	var hide = function() {
-		// pre-callback
-		settings.onbeforehide();
-		// fade out
-		if (doesTransitions) {
-			// CSS animation bound to classes
-			overlayDOM.className = overlayDOM.className.replace("show","hide");
-		} else if (typeof $ === "function") {
-			// polyfill requires jQuery
-			$(overlayDOM).fadeOut({
-				duration: 200
-			}, function() {
-				destroy();
-				settings.onhide();
-			});
-		}
-	};
+    var hide = function() {
+
+        // pre-callback
+        settings.onbeforehide();
+        
+        destroy();
+       
+    };
 
 	var destroy = function() {
+
 		if (params.parentEl) {
 			document.getElementById(params.parentEl).removeChild(overlayDOM);
 		} else {
 			document.body.removeChild(overlayDOM);
 		}
+		if(settings.readOnly) {
+			document.body.removeChild(overlayBlock);
+		}
+
+        settings.onhide();
+		
 	};
 
 	var update = function(params) {
@@ -135,6 +103,7 @@ var iosOverlay = function(params) {
 		if (params.icon) {
 			if (settings.spinner) {
 				settings.spinner.el.parentNode.removeChild(settings.spinner.el);
+				settings.spinner = null;
 			}
 			overlayDOM.innerHTML += '<img src="' + params.icon + '">';
 		}
